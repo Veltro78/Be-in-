@@ -27,7 +27,17 @@ faire passer toujours plus de monde, jusqu'à l'humanité entière (8,1 milliard
    en localStorage (protégée par try/catch), gains hors-ligne, interface en français, nombres formatés (12 345, 1,2 M, 3,4 Md).
 6. **Original** : mécanique du genre, mais aucun nom, personnage, logo ou visuel copié d'un jeu existant.
 
+## Boucle de dopamine (ce qui rend le jeu satisfaisant, à préserver et enrichir)
+- Pièces qui volent jusqu'au compteur + compteur qui défile ; « +N » flottants au-dessus de la sortie.
+- Combo « Flux ×N » avec paliers annoncés en grand (Bien ! → Cosmique !), son qui monte avec le palier.
+- Jauge RUSH (×3 pendant 10 s), bulles dorées à toucher, paliers d'humains récompensés, VIP dorés ×25.
+- Chaque achat : orbe qui tourne, étincelles, son, onde au sol ; les boutons achetables brillent et respirent.
+- Musique générative douce (WebAudio), désactivable ; sons courts, jamais agressifs.
+
 ## Méthode de travail
+- `index.html` est la source unique. `python3 tools/build-artifact.py <fichier>` produit la version Artifact claude.ai
+  (Three.js depuis jsDelivr, sans balises html/head/body). Les zones `HEAD:START/END` et `BODY:START/END` doivent rester.
+- Dans un Artifact, `alert()`/`confirm()` ne marchent pas : toute confirmation se fait dans la page.
 - Lis `index.html` en entier avant de modifier ; garde la structure (CONFIG, état, simulation, rendu, UI).
 - Après modification, teste avec Playwright (Chromium est préinstallé) : charge la page, simule des taps,
   vérifie qu'il n'y a aucune erreur console et prends une capture.
