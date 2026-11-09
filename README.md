@@ -1,6 +1,6 @@
 # Le Grand Passage
 
-Jeu idle web en 3D, style « Aero Lagoon » (années 2006) : faites passer l'humanité entière (8,1 milliards) par une seule porte tournante en verre, au milieu d'un lagon.
+Jeu idle web en 3D, style « Néon de nuit » : une rue de ville sous la pluie, des taxis et un bus de nuit déposent une foule de figurines peintes que vous faites passer, jusqu'aux 8,1 milliards d'humains, par une seule porte tournante.
 
 **Jouer** : ouvrez `index.html` dans un navigateur (mobile ou ordinateur). Aucun build : Three.js est fourni dans `lib/`.
 
@@ -8,14 +8,15 @@ Jeu idle web en 3D, style « Aero Lagoon » (années 2006) : faites passer l'hum
 - Écran titre : touchez pour lancer la partie (active aussi le son et la musique).
 - **Touchez** l'écran : la porte reçoit une impulsion. **Maintenez** : elle accélère.
 - Chaque bonhomme qui traverse rapporte des pièces. Un flux continu fait monter le **combo** (jusqu'à ×6).
-- Les bonhommes **dorés** sont des VIP : ×25.
+- Les figurines en costume **doré** sont des VIP : ×25.
 - Paliers de flux (Bien ! → Super ! → … → Cosmique !) annoncés en grand, avec son et bulles.
 - **Jauge RUSH** : elle se remplit en touchant, en maintenant et à chaque passage. Pleine, elle déclenche 10 s de RUSH ×3 (porte dorée, musique accélérée).
-- **Bulles dorées** : de temps en temps, une bulle dorée flotte au-dessus de la place ; touchez-la avant qu'elle disparaisse pour un gros bonus.
+- **Jetons dorés** : de temps en temps, un jeton doré flotte au-dessus de la place ; touchez-le avant qu'il disparaisse pour un gros bonus.
+- Au lancement, la porte tombe du ciel et les néons s'allument.
 - **Paliers** (10, 25, 50, 100… humains passés) : bannière + pièces bonus.
 - Les pièces gagnées volent jusqu'au compteur, qui défile.
 - Achetez des améliorations dans la barre du bas ; de nouvelles se débloquent au fil des passages :
-  Rotation, Capacité, Affluence, Pales, Mégaphone, Monorail, Moteur, Foule.
+  Rotation, Capacité, Affluence, Pales, Mégaphone, Bus de nuit, Moteur, Foule.
 - Sauvegarde automatique + gains hors-ligne (jusqu'à 3 h).
 - Menu pause : son, qualité (haute / économie sans ombres), remise à zéro.
 

@@ -16,9 +16,13 @@ faire passer toujours plus de monde, jusqu'à l'humanité entière (8,1 milliard
 
 ## Principes de design (non négociables)
 1. **Satisfaction d'abord** : chaque action a un retour immédiat (son doux, particules, texte flottant, léger zoom/secousse).
-2. **Direction artistique « Aero Lagoon »** (informatique des années 2006, Frutiger Aero) : lagon turquoise, ciel bleu,
-   herbe vert citron, verre brillant, chrome, bulles, boutons-orbes vernis, tout est arrondi. Bonhommes = jouets
-   brillants (capsule + tête ronde) aux couleurs vives ; VIP dorés.
+2. **Direction artistique « Néon de nuit »** (choisie avec l'utilisateur) : une rue de ville après minuit sous la pluie,
+   asphalte mouillé qui reflète des néons rose (#ff3d8b) et cyan (#2ee6f0), lampadaires au sodium (#ffc857),
+   touches violettes (#8b5cff). Fond nuit #0b0d1a. Polices : Tilt Neon (titres, chiffres) + Manrope (texte).
+   Personnages = **figurines de maquette peintes à la main** : proportions humaines, vêtements variés, enfants,
+   personnes âgées, sacs, parapluies ; VIP en costume doré. Composition : la foule arrive par la route en bas
+   (taxis, bus de nuit, passants des rues latérales), passe la porte au centre et repart vers l'avenue en haut.
+   Pas d'île ni de plateau circulaire : un vrai décor urbain.
 3. **Mouvement permanent** : il se passe toujours quelque chose à l'écran ; les foules s'agglutinent, la porte tourne.
 4. **Progression** : nouvelles améliorations débloquées par paliers ; coûts exponentiels équilibrés
    (débit ~ revenus pour que chaque achat arrive en 20–90 s au début).
@@ -30,9 +34,10 @@ faire passer toujours plus de monde, jusqu'à l'humanité entière (8,1 milliard
 ## Boucle de dopamine (ce qui rend le jeu satisfaisant, à préserver et enrichir)
 - Pièces qui volent jusqu'au compteur + compteur qui défile ; « +N » flottants au-dessus de la sortie.
 - Combo « Flux ×N » avec paliers annoncés en grand (Bien ! → Cosmique !), son qui monte avec le palier.
-- Jauge RUSH (×3 pendant 10 s), bulles dorées à toucher, paliers d'humains récompensés, VIP dorés ×25.
+- Jauge RUSH (×3 pendant 10 s), jetons dorés à toucher, porte qui tombe du ciel au lancement, paliers d'humains récompensés, VIP dorés ×25.
 - Chaque achat : orbe qui tourne, étincelles, son, onde au sol ; les boutons achetables brillent et respirent.
-- Musique générative douce (WebAudio), désactivable ; sons courts, jamais agressifs.
+- Musique synthwave générative (WebAudio) qui monte en intensité avec le jeu (titre → jeu → flux ≥ 50 → RUSH),
+  ambiance pluie, effets en synthèse FM/soustractive avec réverbération ; jamais agressif.
 
 ## Méthode de travail
 - `index.html` est la source unique. `python3 tools/build-artifact.py <fichier>` produit la version Artifact claude.ai
