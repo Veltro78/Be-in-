@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f7f7f5">
+<title>Le Grand Passage</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --ink: #141414;
+    --ink-2: #5d5d5a;
+    --ink-3: #a3a39e;
+    --panel: rgba(255,255,255,.92);
+    --line: #e2e2dd;
+    --accent: #ff5b2e;
+    --accent-soft: #ffe4d9;
+    --ok: #1f9d55;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* HUD */
+  .hud { position: fixed; top: max(12px, env(safe-area-inset-top)); right: 16px; text-align: right; pointer-events: none; }
+  .coins { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-weight: 800; font-size: 34px; letter-spacing: -.5px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .coins svg { width: 24px; height: 24px; }
+  .coins.bump { animation: bump .25s ease-out; }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  .rate { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .stats { margin-top: 8px; font-size: 11px; color: var(--ink-2); line-height: 1.45; font-variant-numeric: tabular-nums; }
+  .stats b { color: var(--ink); }
+  .progress { margin: 6px 0 0 auto; width: 150px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 4px; transition: width .4s; }
+
+  .menu-btn { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 16px; width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid var(--ink); background: var(--panel); display: grid; place-items: center; cursor: pointer; }
+  .menu-btn svg { width: 16px; height: 16px; }
+
+  /* Upgrade bar */
+  .bar-wrap { position: fixed; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom)); display: flex; justify-content: center; padding: 0 10px; pointer-events: none; }
+  .bar { pointer-events: auto; display: flex; gap: 4px; padding: 8px; background: var(--panel); border: 1.5px solid var(--ink); border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.10); overflow-x: auto; max-width: 100%; scrollbar-width: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .bar::-webkit-scrollbar { display: none; }
+  .up { position: relative; flex: 0 0 auto; width: 68px; padding: 6px 2px 4px; border: 0; background: transparent; border-radius: 14px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink); font: inherit; transition: transform .12s, background .2s; }
+  .up:active { transform: scale(.92); }
+  .up .ic { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--ink); display: grid; place-items: center; background: #fff; transition: background .2s, color .2s; }
+  .up .ic svg { width: 22px; height: 22px; }
+  .up .nm { font-size: 10px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+  .up .pr { font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .up .pr svg { width: 10px; height: 10px; }
+  .up .lv { position: absolute; top: 2px; right: 6px; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 9.5px; font-weight: 800; display: grid; place-items: center; }
+  .up.can .ic { background: var(--ink); color: #fff; }
+  .up.can .pr { color: var(--ink); }
+  .up.cant { opacity: .55; }
+  .up.locked .ic { border-style: dashed; color: var(--ink-3); border-color: var(--ink-3); }
+  .up.locked { opacity: .5; }
+  .up.max .pr { color: var(--ok); }
+  .up.new::after { content: ""; position: absolute; top: 4px; left: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.6); opacity: .5; } }
+
+  /* Tooltip */
+  .tip { position: fixed; left: 50%; bottom: 120px; transform: translate(-50%, 8px); min-width: 210px; max-width: 280px; padding: 12px 14px; background: #fff; border: 1.5px solid var(--ink);
+    border-radius: 14px; font-size: 12px; line-height: 1.4; opacity: 0; transition: opacity .15s, transform .15s; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+  .tip.show { opacity: 1; transform: translate(-50%, 0); }
+  .tip h4 { margin: 0 0 4px; font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+  .tip h4 span { font-size: 11px; color: var(--ink-2); }
+  .tip p { margin: 0; color: var(--ink-2); }
+  .tip .nx { margin-top: 6px; font-weight: 700; color: var(--ink); }
+
+  /* Toasts */
+  .toasts { position: fixed; top: max(70px, calc(env(safe-area-inset-top) + 58px)); left: 16px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .toast { padding: 8px 12px; background: var(--ink); color: #fff; border-radius: 12px; font-size: 12px; font-weight: 700; animation: tin .3s ease-out, tout .4s ease-in 2.6s forwards; max-width: 240px; }
+  .toast.accent { background: var(--accent); }
+  @keyframes tin { from { transform: translateX(-20px); opacity: 0; } }
+  @keyframes tout { to { transform: translateX(-20px); opacity: 0; } }
+
+  .hint { position: fixed; left: 50%; top: 62%; transform: translateX(-50%); font-size: 13px; font-weight: 700; color: var(--ink-2); pointer-events: none;
+    display: flex; align-items: center; gap: 8px; transition: opacity .6s; white-space: nowrap; max-width: calc(100vw - 32px); }
+  .hint .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite; }
+
+  /* Overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(247,247,245,.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; place-items: center; z-index: 10; }
+  .overlay.show { display: grid; }
+  .card { width: min(320px, calc(100vw - 32px)); background: #fff; border: 1.5px solid var(--ink); border-radius: 22px; padding: 22px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,.12); }
+  .card h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.3px; }
+  .card p { margin: 0 0 16px; color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+  .card button { display: block; width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; border: 1.5px solid var(--ink); background: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; color: var(--ink); }
+  .card button.primary { background: var(--ink); color: #fff; }
+  .card button.danger { border-color: #c0392b; color: #c0392b; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<button class="menu-btn" id="menuBtn" aria-label="Menu">
+  <svg viewBox="0 0 16 16"><rect x="3" y="2" width="3.4" height="12" rx="1.2" fill="currentColor"/><rect x="9.6" y="2" width="3.4" height="12" rx="1.2" fill="currentColor"/></svg>
+</button>
+
+<div class="hud">
+  <div class="coins" id="coins"><span id="coinVal">0</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="4.2" fill="currentColor"/></svg></div>
+  <div class="rate" id="rate">+0 / min</div>
+  <div class="stats">
+    Passés : <b id="total">0</b><br>
+    <span id="pct">0 %</span> de l'humanité
+  </div>
+  <div class="progress"><i id="prog"></i></div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="hint" id="hint"><span class="dot"></span>Touchez pour tourner · maintenez pour accélérer</div>
+<div class="tip" id="tip"></div>
+
+<div class="bar-wrap"><div class="bar" id="bar"></div></div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <h2>Le Grand Passage</h2>
+    <p>Faites passer l'humanité entière — 8,1 milliards de personnes — par une seule porte tournante.</p>
+    <button class="primary" id="resume">Reprendre</button>
+    <button id="soundBtn">Son : activé</button>
+    <button class="danger" id="resetBtn">Recommencer à zéro</button>
+  </div>
+</div>
+
+<div class="overlay" id="win">
+  <div class="card">
+    <h2>L'humanité est passée.</h2>
+    <p id="winText">Les 8,1 milliards. Tous. Par votre porte.</p>
+    <button class="primary" id="winGo">Continuer à faire tourner</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================================================================
+   CONFIG
+   ================================================================ */
+const HUMANITY = 8.1e9;
+const MAX_AGENTS = 1200;
+const R = 70;                  // door radius (world units)
+const WALL_ANGLE = 0.36;       // wall direction (radians, screen space, y down)
+const SAVE_KEY = 'grand-passage-v1';
+const TAU = Math.PI * 2;
+
+const UPGRADES = [
+  { id: 'speed',  name: 'Rotation',  unlock: 0,     base: 12,   mult: 1.48, max: 40,
+    desc: 'La porte tourne plus vite.', fx: l => `${fmtDec(rotSpeed(l))} tr/min` },
+  { id: 'cap',    name: 'Capacité',  unlock: 0,     base: 20,   mult: 1.62, max: 36,
+    desc: 'Plus de monde dans chaque compartiment.', fx: l => `${capacity(l)} pers. / compartiment` },
+  { id: 'spawn',  name: 'Affluence', unlock: 60,    base: 45,   mult: 1.5,  max: 45,
+    desc: 'Plus de gens arrivent vers la porte.', fx: l => `${fmtDec(spawnRate(l) * 60)} arrivées / min` },
+  { id: 'blades', name: 'Pales',     unlock: 120,   base: 150,  mult: 5.5,  max: 6,
+    desc: 'Une pale de plus = un compartiment de plus par tour.', fx: l => `${blades(l)} pales` },
+  { id: 'mega',   name: 'Mégaphone', unlock: 400,   base: 450,  mult: 1.9,  max: 20,
+    desc: 'La foule marche plus vite et vos impulsions sont plus fortes.', fx: l => `vitesse ×${fmtDec(1 + 0.14 * l)}` },
+  { id: 'train',  name: 'Train',     unlock: 1500,  base: 1800, mult: 2.4,  max: 25,
+    desc: 'Un train dépose régulièrement une foule devant la porte.', fx: l => l ? `${trainLoad(l)} passagers / ${fmtDec(trainInterval(l))} s` : 'aucun train' },
+  { id: 'motor',  name: 'Moteur',    unlock: 6000,  base: 7000, mult: 2.3,  max: 30,
+    desc: 'La porte accélère toute seule, même sans vous.', fx: l => `+${fmtDec(l * 0.35)} rad/s en continu` },
+  { id: 'crowd',  name: 'Foule',     unlock: 30000, base: 40000,mult: 6.5,  max: 30,
+    desc: 'Chaque bonhomme représente deux fois plus d’humains (et rapporte 2× plus).', fx: l => `1 bonhomme = ${fmt(2 ** l)} humain${l ? 's' : ''}` },
+];
+
+const rotSpeed      = l => 0.85 * Math.pow(1.13, l) * 60 / TAU;     // tr/min (display)
+const omegaBase     = l => Math.min(16, 0.85 * Math.pow(1.13, l));  // rad/s
+const capacity      = l => 2 + l;
+const spawnRate     = l => 1.5 * Math.pow(1.24, l);                   // people/s
+const blades        = l => 2 + l;
+const walkSpeed     = l => 36 * (1 + 0.14 * l);
+const trainLoad     = l => 10 + 8 * l;
+const trainInterval = l => Math.max(6, 16 - l * 0.45);
+const upCost        = (u, l) => Math.ceil(u.base * Math.pow(u.mult, l));
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const S = {
+  coins: 0, total: 0, levels: {}, seen: {}, sound: true, won: false, hinted: false, lastSeen: Date.now(), rate: 0,
+};
+UPGRADES.forEach(u => { S.levels[u.id] = 0; });
+const lvl = id => S.levels[id] || 0;
+
+function save() {
+  S.lastSeen = Date.now();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+}
+function load() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) {}
+  if (!d) return;
+  Object.assign(S, d);
+  S.levels = Object.assign({}, ...UPGRADES.map(u => ({ [u.id]: 0 })), d.levels || {});
+  const away = Math.min(3 * 3600, (Date.now() - (d.lastSeen || Date.now())) / 1000);
+  if (away > 30 && S.rate > 0) {
+    const gain = Math.floor(S.rate * away * 0.5);
+    if (gain > 0) {
+      S.coins += gain;
+      setTimeout(() => toast(`Pendant votre absence : +${fmt(gain)}`, true), 600);
+    }
+  }
+}
+
+/* ================================================================
+   FORMAT
+   ================================================================ */
+const nfInt = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+const nfDec = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+function fmt(n) {
+  n = Math.floor(n);
+  if (n < 1e6) return nfInt.format(n);
+  const units = [[1e15, ' Brd'], [1e12, ' Bn'], [1e9, ' Md'], [1e6, ' M']];
+  for (const [v, s] of units) if (n >= v) return nfDec.format(n / v) + s;
+  return nfInt.format(n);
+}
+const fmtDec = n => nfDec.format(n);
+function fmtPct(p) {
+  if (p >= 1) return nfDec.format(p) + ' %';
+  if (p === 0) return '0 %';
+  const digits = Math.min(8, Math.max(2, 1 - Math.floor(Math.log10(p))));
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: digits }).format(p) + ' %';
+}
+
+/* ================================================================
+   AUDIO (soft, synthesized)
+   ================================================================ */
+let AC = null, master = null;
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0.5; master.connect(AC.destination);
+  } catch (e) { AC = null; }
+}
+function tone(freq, dur = 0.08, type = 'sine', vol = 0.15, when = 0) {
+  if (!AC || !S.sound) return;
+  const t = AC.currentTime + when;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+}
+let noiseBuf = null;
+function whoosh(vol = 0.12) {
+  if (!AC || !S.sound) return;
+  if (!noiseBuf) {
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.4, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const t = AC.currentTime;
+  const src = AC.createBufferSource(); src.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+  f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(1800, t + 0.18);
+  const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  src.connect(f); f.connect(g); g.connect(master); src.start(t); src.stop(t + 0.35);
+}
+const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+let lastTick = 0, tickStep = 0;
+function passTick(n) {
+  const now = performance.now();
+  if (now - lastTick < 70) return;
+  lastTick = now;
+  tickStep = (tickStep + 1) % PENTA.length;
+  const f = 523.25 * Math.pow(2, PENTA[tickStep] / 12);
+  tone(f, 0.09, 'triangle', Math.min(0.11, 0.04 + n * 0.006));
+}
+function buySound() { tone(659.25, 0.12, 'triangle', 0.16); tone(987.77, 0.18, 'triangle', 0.14, 0.07); }
+function unlockSound() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.2, 'triangle', 0.13, i * 0.07)); }
+
+/* ================================================================
+   CANVAS / GEOMETRY
+   ================================================================ */
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, SC = 1, CX = 0, CY = 0, VR = 600;
+
+const wx = Math.cos(WALL_ANGLE), wy = Math.sin(WALL_ANGLE);   // wall direction
+const nx = -wy, ny = wx;                                       // normal (exit side)
+const EA = Math.atan2(-ny, -nx);                               // entrance angle (in side)
+const XA = EA + Math.PI;                                       // exit angle
+const EX = Math.cos(EA) * (R + 10), EY = Math.sin(EA) * (R + 10);  // entrance point
+
+function resize() {
+  DPR = Math.min(2.5, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  SC = Math.max(0.6, Math.min(W / 380, (H - 140) / 520, 1.7));
+  CX = W / 2; CY = Math.min(H * 0.46, (H - 120) / 2 + 20);
+  VR = Math.hypot(Math.max(CX, W - CX), Math.max(CY, H - CY)) / SC + 30;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ================================================================
+   SIMULATION
+   ================================================================ */
+const IN = 0, BOARD = 1, RIDE = 2, OUT = 3;
+const agents = [];
+let theta = 0, boost = 0, pressing = false, pressT = 0, doorPulse = 0, shake = 0;
+let comps = [];            // riders per compartment
+let N = 2;
+let spawnAcc = 0;
+let combo = 0, comboTimer = 0, comboPulse = 0;
+const floats = [];         // floating texts
+const parts = [];          // particles
+const ripples = [];
+let pendingFloat = 0, pendingFloatT = 0, pendingVip = false;
+const rateBuckets = new Float64Array(60); let rateIdx = 0, rateAcc = 0;
+
+const train = { active: false, x: 0, state: 0, t: 0, timer: 8, dropped: false };
+const TRACK_OFF = 175;
+
+function setBlades(n) {
+  // unload everyone still inside when geometry changes
+  if (comps.length) for (const c of comps) for (const a of c) releaseAgent(a, Math.atan2(a.y, a.x));
+  N = n; comps = Array.from({ length: N }, () => []);
+}
+
+function spawnAgent(x, y) {
+  if (agents.length >= MAX_AGENTS) return null;
+  const a = {
+    x, y, s: IN, sp: (0.8 + Math.random() * 0.4), ph: Math.random() * TAU,
+    vip: Math.random() < 1 / 160, k: 0, j: 0, t: 0, sx: 0, sy: 0, tx: 0, ty: 0, al: 1,
+  };
+  agents.push(a);
+  return a;
+}
+function spawnEdge() {
+  const ang = EA + (Math.random() - 0.5) * 2.3;
+  const r = VR + Math.random() * 40;
+  spawnAgent(Math.cos(ang) * r, Math.sin(ang) * r);
+}
+
+function slotPos(k, j, cap) {
+  const hw = Math.PI / N;
+  const phi = theta + (k + 0.5) * TAU / N;
+  const rows = Math.ceil(cap / 3);
+  const m = Math.floor(j / 3);
+  const step = Math.min(0.3, (hw * 0.7) / Math.max(1, Math.ceil((rows - 1) / 2)));
+  const off = (m % 2 ? 1 : -1) * Math.ceil(m / 2) * step;
+  const r = R * (0.32 + 0.24 * (j % 3));
+  return [Math.cos(phi + off) * r, Math.sin(phi + off) * r];
+}
+
+function crossed(prev, d, target) {
+  let x = (target - prev) % TAU; if (x < 0) x += TAU;
+  return x > 0 && x <= d;
+}
+
+function board(k) {
+  const cap = capacity(lvl('cap'));
+  const c = comps[k];
+  const room = cap - c.length;
+  if (room <= 0) return;
+  const cand = [];
+  const lim = 30 + Math.sqrt(cap) * 6;
+  for (const a of agents) {
+    if (a.s !== IN) continue;
+    const d = Math.hypot(a.x - EX, a.y - EY);
+    if (d < lim) cand.push([d, a]);
+  }
+  cand.sort((p, q) => p[0] - q[0]);
+  for (let i = 0; i < Math.min(room, cand.length); i++) {
+    const a = cand[i][1];
+    a.s = BOARD; a.k = k; a.j = c.length; a.t = 0; a.sx = a.x; a.sy = a.y;
+    c.push(a);
+  }
+}
+
+function releaseAgent(a, ang) {
+  a.s = OUT;
+  const oa = XA + (Math.random() - 0.5) * 2.0;
+  const r = VR + 60;
+  a.tx = Math.cos(oa) * r; a.ty = Math.sin(oa) * r;
+  // count it
+  const w = Math.pow(2, lvl('crowd'));
+  const mult = 1 + Math.min(combo, 2000) / 400;   // up to ×6 on huge flows
+  const val = w * mult * (a.vip ? 25 : 1);
+  S.coins += val; S.total += w;
+  rateAcc += val;
+  pendingFloat += val; if (a.vip) pendingVip = true;
+  combo++; comboTimer = 2.2; comboPulse = 1;
+}
+
+function unload(k) {
+  const c = comps[k];
+  if (!c.length) return;
+  for (const a of c) releaseAgent(a);
+  passTick(c.length);
+  // burst
+  const ex = Math.cos(XA) * (R + 6), ey = Math.sin(XA) * (R + 6);
+  const n = Math.min(14, 3 + c.length);
+  for (let i = 0; i < n; i++) {
+    const ang = XA + (Math.random() - 0.5) * 1.6, sp = 30 + Math.random() * 70;
+    parts.push({ x: ex, y: ey, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.5 + Math.random() * 0.3, t: 0, acc: c.some(a => a.vip) });
+  }
+  comps[k] = [];
+}
+
+/* ---------- spatial hash for crowd separation ---------- */
+const CELL = 7;
+const grid = new Map();
+function hashKey(cx, cy) { return (cx + 2048) * 4096 + (cy + 2048); }
+
+function step(dt) {
+  // --- door speed ---
+  const ob = omegaBase(lvl('speed'));
+  const tapPow = 1 + 0.14 * lvl('mega');
+  if (pressing) { pressT += dt; boost += (3.2 + Math.min(pressT, 3) * 2.2) * tapPow * dt; }
+  boost *= Math.exp(-(pressing ? 0.35 : 1.3) * dt);
+  const motor = lvl('motor') * 0.35;
+  const maxW = 22;
+  const omega = Math.min(maxW, ob + boost + motor);
+  const dth = omega * dt;
+
+  // compartments crossing entrance/exit
+  for (let k = 0; k < N; k++) {
+    const phi = theta + (k + 0.5) * TAU / N;
+    if (crossed(phi, dth, XA)) unload(k);
+    if (crossed(phi, dth, EA)) board(k);
+  }
+  theta = (theta + dth) % TAU;
+  S._omega = omega;
+
+  // --- spawning ---
+  spawnAcc += spawnRate(lvl('spawn')) * dt;
+  let guard = 0;
+  while (spawnAcc >= 1 && guard++ < 60) {
+    spawnAcc -= 1;
+    if (agents.length < MAX_AGENTS) spawnEdge();
+  }
+  if (agents.length >= MAX_AGENTS) spawnAcc = Math.min(spawnAcc, 3);
+
+  // --- train ---
+  stepTrain(dt);
+
+  // --- agents ---
+  const ws = walkSpeed(lvl('mega'));
+  const cap = capacity(lvl('cap'));
+  grid.clear();
+  for (const a of agents) {
+    if (a.s !== IN) continue;
+    const key = hashKey(Math.floor(a.x / CELL), Math.floor(a.y / CELL));
+    let b = grid.get(key); if (!b) grid.set(key, b = []); b.push(a);
+  }
+
+  for (let i = agents.length - 1; i >= 0; i--) {
+    const a = agents[i];
+    if (a.s === IN) {
+      let dx = EX - a.x, dy = EY - a.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const v = ws * a.sp * (d < 40 ? Math.max(0.25, d / 40) : 1);
+      a.x += dx / d * v * dt; a.y += dy / d * v * dt;
+      a.ph += v * dt * 0.32;
+      // separation
+      const cx = Math.floor(a.x / CELL), cy = Math.floor(a.y / CELL);
+      for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) {
+        const b = grid.get(hashKey(gx, gy)); if (!b) continue;
+        for (const o of b) {
+          if (o === a) continue;
+          const ox = a.x - o.x, oy = a.y - o.y, dd = ox * ox + oy * oy;
+          if (dd < 30 && dd > 0.0001) {
+            const dl = Math.sqrt(dd), push = (5.5 - dl) * 0.5;
+            a.x += ox / dl * push; a.y += oy / dl * push;
+          }
+        }
+      }
+      // keep out of the door and behind the wall
+      const rr = Math.hypot(a.x, a.y);
+      if (rr < R + 7) { a.x = a.x / rr * (R + 7); a.y = a.y / rr * (R + 7); }
+      const side = a.x * nx + a.y * ny;
+      if (side > -6) { a.x -= nx * (side + 6); a.y -= ny * (side + 6); }
+    } else if (a.s === BOARD || a.s === RIDE) {
+      const [px, py] = slotPos(a.k, a.j, cap);
+      if (a.s === BOARD) {
+        a.t += dt / 0.22;
+        const e = Math.min(1, a.t), ee = 1 - Math.pow(1 - e, 3);
+        a.x = a.sx + (px - a.sx) * ee; a.y = a.sy + (py - a.sy) * ee;
+        if (a.t >= 1) a.s = RIDE;
+      } else { a.x = px; a.y = py; }
+      a.ph += S._omega * dt * 6;
+    } else { // OUT
+      let dx = a.tx - a.x, dy = a.ty - a.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const v = ws * a.sp * 1.15;
+      a.x += dx / d * v * dt; a.y += dy / d * v * dt;
+      a.ph += v * dt * 0.32;
+      const side = a.x * nx + a.y * ny;
+      if (side < 6 && Math.hypot(a.x, a.y) > R) { a.x += nx * (6 - side); a.y += ny * (6 - side); }
+      if (d < 20 || Math.hypot(a.x, a.y) > VR + 50) { agents[i] = agents[agents.length - 1]; agents.pop(); }
+    }
+  }
+
+  // --- combo ---
+  comboTimer -= dt;
+  if (comboTimer <= 0 && combo > 0) { combo = Math.max(0, Math.floor(combo * Math.exp(-3 * dt)) - 1); }
+  comboPulse = Math.max(0, comboPulse - dt * 4);
+
+  // --- floating text aggregation ---
+  pendingFloatT -= dt;
+  if (pendingFloat > 0 && pendingFloatT <= 0) {
+    const ex = Math.cos(XA) * (R + 26), ey = Math.sin(XA) * (R + 26);
+    floats.push({ x: ex + (Math.random() - 0.5) * 30, y: ey, t: 0, text: '+' + fmt(pendingFloat), vip: pendingVip });
+    pendingFloat = 0; pendingVip = false; pendingFloatT = 0.28;
+  }
+  for (let i = floats.length - 1; i >= 0; i--) { const f = floats[i]; f.t += dt; f.y -= 22 * dt; if (f.t > 1.1) floats.splice(i, 1); }
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92;
+    if (p.t > p.life) parts.splice(i, 1);
+  }
+  for (let i = ripples.length - 1; i >= 0; i--) { ripples[i].t += dt; if (ripples[i].t > 0.5) ripples.splice(i, 1); }
+  doorPulse = Math.max(0, doorPulse - dt * 5);
+  shake = Math.max(0, shake - dt * 3);
+
+  // --- rate (coins/min over last 60 s) ---
+  rateBucketT += dt;
+  if (rateBucketT >= 1) {
+    rateBucketT -= 1;
+    rateBuckets[rateIdx] = rateAcc; rateAcc = 0; rateIdx = (rateIdx + 1) % 60;
+    let s = 0, n = 0; for (let i = 0; i < 60; i++) { s += rateBuckets[i]; if (rateBuckets[i] > 0 || i < upTime) n++; }
+    upTime++;
+    S.rate = s / Math.max(1, Math.min(60, upTime));
+  }
+
+  if (!S.won && S.total >= HUMANITY) { S.won = true; showWin(); }
+}
+let rateBucketT = 0, upTime = 0;
+
+function stepTrain(dt) {
+  const L = lvl('train');
+  if (!L) return;
+  const t = train;
+  if (!t.active) {
+    t.timer -= dt;
+    if (t.timer <= 0) { t.active = true; t.state = 0; t.x = -VR - 260; t.dropped = false; }
+    return;
+  }
+  const stopX = -20;
+  if (t.state === 0) {           // arriving, ease into the station
+    const d = stopX - t.x;
+    t.x += Math.max(18, Math.min(260, d * 2.2)) * dt;
+    if (d < 1) { t.x = stopX; t.state = 1; t.t = 0; }
+  } else if (t.state === 1) {    // unloading
+    t.t += dt;
+    if (!t.dropped && t.t > 0.35) {
+      t.dropped = true;
+      const n = trainLoad(L);
+      const ox = -nx * TRACK_OFF, oy = -ny * TRACK_OFF;
+      for (let i = 0; i < n; i++) {
+        const along = t.x + (Math.random() - 0.5) * 190;
+        const a = spawnAgent(ox + wx * along + nx * (14 + Math.random() * 10), oy + wy * along + ny * (14 + Math.random() * 10));
+        if (!a) break;
+      }
+      whoosh(0.06); tone(392, 0.25, 'sine', 0.08); tone(523.25, 0.3, 'sine', 0.07, 0.12);
+    }
+    if (t.t > 1.6) t.state = 2;
+  } else {                        // leaving
+    t.x += Math.min(320, 30 + (t.x - stopX) * 2.4) * dt;
+    if (t.x > VR + 300) { t.active = false; t.timer = trainInterval(L); }
+  }
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+const INK = '#141414', ACC = '#ff5b2e';
+
+function drawFigures(list, alpha) {
+  // shadows
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.beginPath();
+  for (const a of list) { ctx.moveTo(a.x + 3.2, a.y + 0.6); ctx.ellipse(a.x, a.y + 0.6, 3.2, 1.3, 0, 0, TAU); }
+  ctx.fill();
+  // legs
+  ctx.strokeStyle = INK; ctx.lineCap = 'round';
+  ctx.lineWidth = 1.5; ctx.beginPath();
+  for (const a of list) {
+    const sw = Math.sin(a.ph) * 1.7;
+    ctx.moveTo(a.x - 0.4, a.y - 3.2); ctx.lineTo(a.x - 0.8 + sw, a.y);
+    ctx.moveTo(a.x + 0.4, a.y - 3.2); ctx.lineTo(a.x + 0.8 - sw, a.y);
+  }
+  ctx.stroke();
+  // bodies
+  ctx.lineWidth = 3.3; ctx.beginPath();
+  for (const a of list) {
+    const bob = Math.abs(Math.cos(a.ph)) * 0.5;
+    ctx.moveTo(a.x, a.y - 3.6 - bob); ctx.lineTo(a.x, a.y - 7.2 - bob);
+  }
+  ctx.stroke();
+  // heads
+  ctx.fillStyle = INK; ctx.beginPath();
+  for (const a of list) {
+    const bob = Math.abs(Math.cos(a.ph)) * 0.5;
+    ctx.moveTo(a.x + 2.3, a.y - 10 - bob); ctx.arc(a.x, a.y - 10 - bob, 2.3, 0, TAU);
+  }
+  ctx.fill();
+}
+function drawVips(list) {
+  ctx.fillStyle = ACC; ctx.strokeStyle = ACC; ctx.lineCap = 'round';
+  for (const a of list) {
+    const bob = Math.abs(Math.cos(a.ph)) * 0.5;
+    ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(a.x, a.y - 3.6 - bob); ctx.lineTo(a.x, a.y - 7.2 - bob); ctx.stroke();
+    ctx.beginPath(); ctx.arc(a.x, a.y - 10 - bob, 2.5, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.12 + 0.08 * Math.sin(performance.now() / 150);
+    ctx.beginPath(); ctx.arc(a.x, a.y - 6, 5, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+  }
+}
+
+function drawWall() {
+  const segs = [[R + 2, VR + 40], [-(VR + 40), -(R + 2)]];
+  for (const [a, b] of segs) {
+    const x1 = wx * a, y1 = wy * a, x2 = wx * b, y2 = wy * b;
+    // base slab
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 18;
+    ctx.beginPath(); ctx.moveTo(x1 + 2, y1 + 4); ctx.lineTo(x2 + 2, y2 + 4); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 15;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    // rails
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    for (const o of [-7.5, 7.5]) {
+      ctx.beginPath(); ctx.moveTo(x1 + nx * o, y1 + ny * o); ctx.lineTo(x2 + nx * o, y2 + ny * o); ctx.stroke();
+    }
+    // posts / bars
+    ctx.lineWidth = 1.1; ctx.strokeStyle = '#3a3a3a';
+    ctx.beginPath();
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    for (let s = Math.ceil(lo / 9) * 9; s <= hi; s += 9) {
+      const px = wx * s, py = wy * s;
+      ctx.moveTo(px - nx * 7.5, py - ny * 7.5); ctx.lineTo(px + nx * 7.5, py + ny * 7.5);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawTrack() {
+  if (!lvl('train')) return;
+  const ox = -nx * TRACK_OFF, oy = -ny * TRACK_OFF, L = VR + 300;
+  ctx.strokeStyle = '#d9d9d4'; ctx.lineWidth = 1.2;
+  for (const o of [-5, 5]) {
+    ctx.beginPath(); ctx.moveTo(ox - wx * L + nx * o, oy - wy * L + ny * o); ctx.lineTo(ox + wx * L + nx * o, oy + wy * L + ny * o); ctx.stroke();
+  }
+  ctx.beginPath();
+  for (let s = -L; s < L; s += 8) { const px = ox + wx * s, py = oy + wy * s; ctx.moveTo(px - nx * 7, py - ny * 7); ctx.lineTo(px + nx * 7, py + ny * 7); }
+  ctx.strokeStyle = '#e6e6e1'; ctx.stroke();
+}
+
+function drawTrain() {
+  if (!train.active) return;
+  const ox = -nx * TRACK_OFF, oy = -ny * TRACK_OFF;
+  ctx.save();
+  ctx.translate(ox + wx * train.x, oy + wy * train.x);
+  ctx.rotate(WALL_ANGLE);
+  const cars = 4, cl = 48, gap = 4, wd = 17;
+  const total = cars * cl + (cars - 1) * gap;
+  for (let i = 0; i < cars; i++) {
+    const x = -total / 2 + i * (cl + gap);
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'; roundRect(x + 2, -wd / 2 + 4, cl, wd, 5); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    if (i === cars - 1) { roundRect(x, -wd / 2, cl, wd, [5, 12, 12, 5]); } else roundRect(x, -wd / 2, cl, wd, 5);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK;
+    for (let w = 0; w < 5; w++) { roundRect(x + 5 + w * 8.4, -wd / 2 + 3, 5.4, 3.4, 1); ctx.fill(); }
+    ctx.fillStyle = '#e8e8e3'; ctx.fillRect(x + 3, 2, cl - 6, 3);
+  }
+  ctx.restore();
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+}
+
+function drawDoorBase() {
+  const sc = 1 + doorPulse * 0.03;
+  ctx.save(); ctx.scale(sc, sc);
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.07)';
+  ctx.beginPath(); ctx.ellipse(3, 6, R + 8, R + 8, 0, 0, TAU); ctx.fill();
+  // floor disc
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(0, 0, R + 4, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#e4e4df'; ctx.lineWidth = 1;
+  for (let r = 18; r < R; r += 16) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
+  // entrance / exit mats
+  for (const [ang, col] of [[EA, 'rgba(0,0,0,0.05)'], [XA, 'rgba(255,91,46,0.10)']]) {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R + 4, ang - 0.6, ang + 0.6); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawDoorTop() {
+  const sc = 1 + doorPulse * 0.03;
+  ctx.save(); ctx.scale(sc, sc);
+  const om = S._omega || 0;
+  // motion ghosts
+  const ghosts = Math.min(4, Math.floor(om / 2.5));
+  for (let g = ghosts; g >= 0; g--) {
+    const th = theta - g * Math.min(0.12, om * 0.012);
+    ctx.globalAlpha = g === 0 ? 1 : 0.13;
+    for (let k = 0; k < N; k++) {
+      const a = th + k * TAU / N;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const ctrl = a - 0.42;
+      ctx.strokeStyle = INK; ctx.lineCap = 'round'; ctx.lineWidth = g === 0 ? 5 : 4;
+      ctx.beginPath(); ctx.moveTo(ca * 11, sa * 11);
+      ctx.quadraticCurveTo(Math.cos(ctrl) * R * 0.62, Math.sin(ctrl) * R * 0.62, ca * (R - 3), sa * (R - 3));
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  // side glass walls (where the door meets the wall)
+  for (const c of [EA + Math.PI / 2, EA - Math.PI / 2]) {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.lineWidth = 12;
+    ctx.beginPath(); ctx.arc(2, 4, R + 4, c - 0.78, c + 0.78); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.arc(0, 0, R + 4, c - 0.78, c + 0.78); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, 0, R - 1, c - 0.78, c + 0.78); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, R + 9, c - 0.78, c + 0.78); ctx.stroke();
+  }
+  // hub
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 12, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.rotate(theta * 2); ctx.lineWidth = 2.4; ctx.beginPath();
+  ctx.moveTo(-5, -5); ctx.lineTo(5, 5); ctx.moveTo(5, -5); ctx.lineTo(-5, 5); ctx.stroke(); ctx.restore();
+  ctx.restore();
+}
+
+function drawCombo() {
+  if (combo < 3) return;
+  const y = -R - 42;
+  const s = 1 + comboPulse * 0.08;
+  const text = `Flux ×${fmt(combo)}`;
+  ctx.save(); ctx.translate(0, y); ctx.scale(s, s);
+  ctx.font = '800 15px ui-rounded, system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 22;
+  ctx.fillStyle = INK; roundRect(-w / 2, -14, w, 26, 13); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 0, 0);
+  // little meter of combo bonus
+  const bonus = Math.min(combo, 2000) / 2000;
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; roundRect(-w / 2 + 8, 16, w - 16, 3, 2); ctx.fill();
+  ctx.fillStyle = ACC; roundRect(-w / 2 + 8, 16, (w - 16) * bonus, 3, 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#f7f7f5'; ctx.fillRect(0, 0, W, H);
+  // dot grid in world space (moves with nothing, gives depth)
+  ctx.fillStyle = 'rgba(0,0,0,0.055)';
+  const g = 22 * SC;
+  const ox = CX % g, oy = CY % g;
+  ctx.beginPath();
+  for (let x = ox; x < W; x += g) for (let y = oy; y < H; y += g) { ctx.moveTo(x + 1, y); ctx.arc(x, y, 1, 0, TAU); }
+  ctx.fill();
+}
+
+const listIn = [], listOut = [], listRide = [], listVip = [];
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBackground();
+  const sx = shake ? (Math.random() - 0.5) * shake * 6 : 0, sy = shake ? (Math.random() - 0.5) * shake * 6 : 0;
+  ctx.setTransform(DPR * SC, 0, 0, DPR * SC, DPR * (CX + sx), DPR * (CY + sy));
+
+  drawTrack();
+  drawTrain();
+
+  listIn.length = listOut.length = listRide.length = listVip.length = 0;
+  for (const a of agents) {
+    if (a.vip) listVip.push(a);
+    else if (a.s === IN) listIn.push(a);
+    else if (a.s === OUT) listOut.push(a);
+    else listRide.push(a);
+  }
+  // sort for depth (cheap enough at this size)
+  listIn.sort((p, q) => p.y - q.y);
+  listOut.sort((p, q) => p.y - q.y);
+
+  drawFigures(listOut);
+  drawWall();
+  drawDoorBase();
+  drawFigures(listRide);
+  drawFigures(listIn);
+  drawVips(listVip);
+  drawDoorTop();
+
+  // particles
+  for (const p of parts) {
+    const k = 1 - p.t / p.life;
+    ctx.globalAlpha = k; ctx.fillStyle = p.acc ? ACC : INK;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 1.8 * k + 0.5, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // floating texts
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const f of floats) {
+    const k = f.t / 1.1;
+    ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.5) / 0.5);
+    ctx.font = `800 ${f.vip ? 15 : 12}px ui-rounded, system-ui, sans-serif`;
+    ctx.fillStyle = f.vip ? ACC : INK;
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+  drawCombo();
+
+  // tap ripples (screen space)
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  for (const r of ripples) {
+    const k = r.t / 0.5;
+    ctx.globalAlpha = 1 - k; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(r.x, r.y, 8 + k * 34, 0, TAU); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ================================================================
+   UI
+   ================================================================ */
+const ICONS = {
+  speed: '<path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19.5 4v4.5H15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  cap: '<circle cx="8" cy="7" r="2.6" fill="currentColor"/><circle cx="16" cy="7" r="2.6" fill="currentColor"/><path d="M8 11v8M16 11v8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="12" cy="9" r="2.2" fill="currentColor" opacity=".55"/>',
+  spawn: '<path d="M3 12h9M8 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17.5" cy="7" r="2" fill="currentColor"/><circle cx="17.5" cy="17" r="2" fill="currentColor"/><circle cx="20" cy="12" r="2" fill="currentColor"/>',
+  blades: '<circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 10C11 6 8 4 5 4M14 12c4-1 6-4 6-7M12 14c1 4 4 6 7 6M10 12c-4 1-6 4-6 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  mega: '<path d="M4 10v4h3l7 4V6L7 10H4z" fill="currentColor"/><path d="M17.5 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  train: '<rect x="4" y="4" width="16" height="13" rx="3.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="7" y="7" width="10" height="4" rx="1" fill="currentColor"/><circle cx="8.5" cy="14" r="1.2" fill="currentColor"/><circle cx="15.5" cy="14" r="1.2" fill="currentColor"/><path d="M7 20l2-3M17 20l-2-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  motor: '<path d="M13 2L5 13.5h6L10 22l8-11.5h-6z" fill="currentColor"/>',
+  crowd: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z" fill="currentColor"/>',
+};
+const COIN_SVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="12" cy="12" r="4.5" fill="currentColor"/></svg>';
+
+const bar = document.getElementById('bar');
+const btns = {};
+UPGRADES.forEach(u => {
+  const b = document.createElement('button');
+  b.className = 'up';
+  b.innerHTML = `<span class="lv"></span><span class="ic"><svg viewBox="0 0 24 24">${ICONS[u.id]}</svg></span><span class="nm">${u.name}</span><span class="pr"></span>`;
+  bar.appendChild(b);
+  btns[u.id] = b;
+  b.addEventListener('click', e => { e.stopPropagation(); buy(u); });
+  b.addEventListener('pointerenter', () => showTip(u));
+  b.addEventListener('pointerleave', hideTip);
+  b.addEventListener('pointerdown', e => { e.stopPropagation(); audioInit(); });
+});
+
+const tipEl = document.getElementById('tip');
+let tipU = null, tipTimer = 0;
+function showTip(u) {
+  tipU = u;
+  const l = lvl(u.id), locked = S.total < u.unlock;
+  tipEl.innerHTML = locked
+    ? `<h4>${u.name} <span>verrouillé</span></h4><p>Se débloque après ${fmt(u.unlock)} humains passés.</p>`
+    : `<h4>${u.name} <span>Niv. ${l}${l >= u.max ? ' (max)' : ''}</span></h4><p>${u.desc}</p>
+       <div class="nx">${u.fx(l)}${l < u.max ? ' → ' + u.fx(l + 1) : ''}</div>`;
+  tipEl.classList.add('show');
+  clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 2600);
+}
+function hideTip() { tipEl.classList.remove('show'); tipU = null; }
+
+function buy(u) {
+  audioInit();
+  const l = lvl(u.id);
+  if (S.total < u.unlock) { showTip(u); tone(180, 0.12, 'sine', 0.08); return; }
+  if (l >= u.max) { showTip(u); return; }
+  const c = upCost(u, l);
+  if (S.coins < c) { showTip(u); tone(200, 0.1, 'sine', 0.07); btns[u.id].animate([{ transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'none' }], { duration: 160 }); return; }
+  S.coins -= c; S.levels[u.id] = l + 1;
+  btns[u.id].classList.remove('new');
+  buySound(); doorPulse = 1; shake = 0.4;
+  if (navigator.vibrate) navigator.vibrate(12);
+  if (u.id === 'blades') setBlades(blades(l + 1));
+  if (u.id === 'train' && l === 0) { train.timer = 1.5; }
+  showTip(u);
+  refreshUI(true);
+  save();
+}
+
+let lastCoinShown = -1;
+function refreshUI(force) {
+  for (const u of UPGRADES) {
+    const b = btns[u.id], l = lvl(u.id);
+    const locked = S.total < u.unlock, max = l >= u.max, c = upCost(u, l);
+    if (!locked && !S.seen[u.id]) {
+      S.seen[u.id] = 1;
+      if (u.unlock > 0) { b.classList.add('new'); toast(`Débloqué : ${u.name}`, true); unlockSound(); }
+    }
+    b.classList.toggle('locked', locked);
+    b.classList.toggle('max', max);
+    b.classList.toggle('can', !locked && !max && S.coins >= c);
+    b.classList.toggle('cant', !locked && !max && S.coins < c);
+    b.querySelector('.lv').textContent = locked ? '🔒' : l;
+    b.querySelector('.pr').innerHTML = locked ? fmt(u.unlock) + ' pass.' : max ? 'MAX' : COIN_SVG + fmt(c);
+  }
+  const cv = Math.floor(S.coins);
+  document.getElementById('coinVal').textContent = fmt(cv);
+  if (force || (cv !== lastCoinShown && cv > lastCoinShown)) {
+    const el = document.getElementById('coins'); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+  lastCoinShown = cv;
+  document.getElementById('rate').textContent = `+${fmt(S.rate * 60)} / min`;
+  document.getElementById('total').textContent = fmt(S.total);
+  const p = S.total / HUMANITY * 100;
+  document.getElementById('pct').textContent = fmtPct(p);
+  document.getElementById('prog').style.width = Math.min(100, Math.max(0.5, Math.log10(1 + S.total) / Math.log10(HUMANITY) * 100)) + '%';
+  if (tipU) {
+    // keep tooltip text fresh
+  }
+}
+
+const toasts = document.getElementById('toasts');
+function toast(msg, accent) {
+  const t = document.createElement('div'); t.className = 'toast' + (accent ? ' accent' : ''); t.textContent = msg;
+  toasts.appendChild(t); setTimeout(() => t.remove(), 3100);
+}
+
+/* ---------- input ---------- */
+const hint = document.getElementById('hint');
+cv.addEventListener('pointerdown', e => {
+  audioInit();
+  pressing = true; pressT = 0;
+  const tapPow = 1 + 0.14 * lvl('mega');
+  boost += 2.4 * tapPow;
+  doorPulse = 1;
+  ripples.push({ x: e.clientX, y: e.clientY, t: 0 });
+  whoosh(0.09);
+  if (navigator.vibrate) navigator.vibrate(6);
+  if (!S.hinted) { S.hinted = true; hint.style.opacity = 0; }
+});
+const endPress = () => { pressing = false; };
+window.addEventListener('pointerup', endPress);
+window.addEventListener('pointercancel', endPress);
+window.addEventListener('blur', endPress);
+if (S.hinted) hint.style.opacity = 0;
+
+/* ---------- menu ---------- */
+const menu = document.getElementById('menu');
+let paused = false;
+const soundBtn = document.getElementById('soundBtn');
+function syncSound() { soundBtn.textContent = 'Son : ' + (S.sound ? 'activé' : 'coupé'); }
+document.getElementById('menuBtn').addEventListener('click', () => { paused = true; menu.classList.add('show'); syncSound(); });
+document.getElementById('resume').addEventListener('click', () => { paused = false; menu.classList.remove('show'); last = performance.now(); });
+soundBtn.addEventListener('click', () => { S.sound = !S.sound; syncSound(); save(); });
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Tout recommencer ? Votre progression sera effacée.')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  location.reload();
+});
+function showWin() {
+  document.getElementById('win').classList.add('show');
+  unlockSound();
+  for (let i = 0; i < 120; i++) {
+    const ang = Math.random() * TAU, sp = 40 + Math.random() * 160;
+    parts.push({ x: 0, y: 0, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1.5 + Math.random(), t: 0, acc: Math.random() < 0.4 });
+  }
+}
+document.getElementById('winGo').addEventListener('click', () => document.getElementById('win').classList.remove('show'));
+
+/* ================================================================
+   BOOT + LOOP
+   ================================================================ */
+load();
+UPGRADES.forEach(u => { if (S.total >= u.unlock) S.seen[u.id] = 1; });
+if (S.hinted) hint.style.opacity = 0;
+setBlades(blades(lvl('blades')));
+// pre-populate a small crowd so the scene is alive from the first frame
+for (let i = 0; i < 70; i++) {
+  const ang = EA + (Math.random() - 0.5) * 2.0, r = R + 14 + Math.pow(Math.random(), 1.6) * (VR - R);
+  spawnAgent(Math.cos(ang) * r, Math.sin(ang) * r);
+}
+if (lvl('train')) train.timer = 3;
+
+let last = performance.now(), uiT = 0, saveT = 0;
+function frame(now) {
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!paused) {
+    // sub-step when the door spins fast so no compartment crossing is missed
+    const sub = Math.max(1, Math.ceil(((S._omega || 1) * dt) / 0.25));
+    for (let i = 0; i < sub; i++) step(dt / sub);
+  }
+  render();
+  uiT += dt; saveT += dt;
+  if (uiT > 0.15) { uiT = 0; refreshUI(false); }
+  if (saveT > 5) { saveT = 0; save(); }
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else last = performance.now(); });
+window.addEventListener('pagehide', save);
+refreshUI(true);
+requestAnimationFrame(frame);
+
+// tiny debug/testing hook
+window.__game = { S, agents, get N() { return N; }, step };
+})();
+</script>
+</body>
+</html>
